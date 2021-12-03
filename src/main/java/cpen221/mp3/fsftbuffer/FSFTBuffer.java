@@ -59,14 +59,14 @@ public class FSFTBuffer<T extends Bufferable> {
 
         // remove any object that has already timeout
         for(int i=0; i<list.size(); i++){
-            if((map.get(list.get(i).id()) > System.nanoTime())){
+            if((map.get(list.get(i).id()) > System.currentTimeMillis())){
                 list.remove(i);
             }
         }
 
         if(list.size() < capacity) {
             list.add(t);
-            long tim = System.nanoTime()+(timeout*1000000000);
+            long tim = System.currentTimeMillis()+(timeout*1000);
             map.put(t.id(), tim);
             return true;
         }
@@ -83,7 +83,7 @@ public class FSFTBuffer<T extends Bufferable> {
             }
             list.remove(list.get(track));
             list.add(t);
-            long tim = System.nanoTime()+(timeout*1000000000);
+            long tim = System.currentTimeMillis()+(timeout*1000);
             map.put(t.id(), tim);
             return true;
         }
@@ -107,7 +107,7 @@ public class FSFTBuffer<T extends Bufferable> {
         for(int i=0; i< list.size();i++){
             if(list.get(i).id() == id){
                 // update the object's timeout time
-                map.put(list.get(i).id(), System.nanoTime()+(timeout*1000000000));
+                map.put(list.get(i).id(), System.currentTimeMillis()+(timeout*1000));
                 return list.get(i);
             }
         }
@@ -125,7 +125,7 @@ public class FSFTBuffer<T extends Bufferable> {
      */
     public boolean touch(String id) {
         /* TODO: Implement this method */
-        long timeInSeconds = System.nanoTime()+(timeout*1000000000);
+        long timeInSeconds = System.currentTimeMillis()+(timeout*1000);
 
         for(int i = 0 ;i <list.size(); i++){
             if(list.get(i).id() == id){
@@ -148,7 +148,7 @@ public class FSFTBuffer<T extends Bufferable> {
     public boolean update(T t) {
         /* TODO: implement this method */
 
-        long timeInSeconds = System.nanoTime()+(timeout*1000000000);
+        long timeInSeconds = System.currentTimeMillis()+(timeout*1000);
 
         for(int i = 0 ;i <list.size(); i++){
             if(list.get(i).id() == t.id()){

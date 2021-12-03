@@ -14,4 +14,14 @@ public class WikiMediator {
 
      */
 
+
+    private int capacity;
+    private int timeout;
+
+
+    public WikiMediator(int capacity, int stalenessInterval){
+
+    }
+
+
 }
