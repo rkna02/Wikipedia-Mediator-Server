@@ -28,8 +28,8 @@ public class FSFTBuffer<T extends Bufferable> {
 
     public FSFTBuffer(int capacity, int timeout) {
         // TODO: implement this constructor
-        capacity = this.capacity;
-        timeout = this.timeout;
+        this.capacity = capacity;
+        this.timeout = timeout;
         //queue = new PriorityQueue<>();
         list = new ArrayList<>();
         map = new HashMap<>();
