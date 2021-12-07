@@ -58,7 +58,7 @@ public class FSFTBuffer<T extends Bufferable> {
         // remove any object that has already timeout
         synchronized (this){
             for(int i=0; i<list.size(); i++){
-                if((map.get(list.get(i).id()) > System.currentTimeMillis())){
+                if((map.get(list.get(i).id()) < System.currentTimeMillis())){
                     list.remove(i);
                 }
             }
@@ -109,7 +109,7 @@ public class FSFTBuffer<T extends Bufferable> {
         // remove any object that has already timeout
         synchronized (this){
             for(int i=0; i<list.size(); i++){
-                if((map.get(list.get(i).id()) > System.currentTimeMillis())){
+                if((map.get(list.get(i).id()) < System.currentTimeMillis())){
                     list.remove(i);
                 }
             }
@@ -141,12 +141,12 @@ public class FSFTBuffer<T extends Bufferable> {
     public boolean touch(String id) {
         /* TODO: Implement this method */
 
-        long timeInSeconds = System.currentTimeMillis()+(timeout*1000);
+        long timeInSeconds = System.currentTimeMillis()+(timeout*1000L);
 
         // remove any object that has already timeout
         synchronized (this){
             for(int i=0; i<list.size(); i++){
-                if((map.get(list.get(i).id()) > System.currentTimeMillis())){
+                if((map.get(list.get(i).id()) < System.currentTimeMillis())){
                     list.remove(i);
                 }
             }

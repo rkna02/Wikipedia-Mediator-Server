@@ -2,6 +2,9 @@ package cpen221.mp3.wikimediator;
 
 import org.fastily.jwiki.core.Wiki;
 
+import java.io.*;
+import java.lang.Thread;
+
 //
 import org.fastily.jwiki.dwrap.Revision;
 import org.fastily.jwiki.core.Wiki;
@@ -31,8 +34,9 @@ public class WikiMediator {
 
     //method 3
     private List <String> requestList;   // a list of strings of request sent in getpage and search
+    private Map<Long, String> requestmap;
     private Map <String, Integer> stringFrequency; // a map of requests and their frequency
-    // private int limitNum;
+
 
     private int count;
     private Map<Integer, Long> countReq;
@@ -47,7 +51,7 @@ public class WikiMediator {
 
         // for method 3 and 4 to obtain information across methods
         requestList =  Collections.synchronizedList(new ArrayList<>());
-
+        requestmap = Collections.synchronizedMap(new HashMap<>());
         // for method 5 and 6
         count = 0;
         countReq = Collections.synchronizedMap(new HashMap<>());
@@ -57,15 +61,16 @@ public class WikiMediator {
     private List<String> search(String query, int limit){
         Wiki wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         // method 5 and 6
+        long tim = System.currentTimeMillis();
         count++;
-        countReq.put(count,System.currentTimeMillis()); // store it's current time
+        countReq.put(count,tim); // store it's current time
         //--------------------------------------
         List<String> searchlist = new ArrayList<>();
         searchlist = wiki.search(query,limit);
 
         // for method 3
         requestList.add(query);
-
+        requestmap.put(tim,query);
 
         return searchlist;
     }
@@ -75,8 +80,9 @@ public class WikiMediator {
         // Gets the text of the main page and prints it.
 
         //method 5 and 6
+        long tim = System.currentTimeMillis();
         count++;
-        countReq.put(count,System.currentTimeMillis()); // store it's current time
+        countReq.put(count, tim); // store it's current time
         //
         StringBuilder textInThePage = new StringBuilder();
         textInThePage.append(wiki.getPageText(pageTitle));
@@ -110,7 +116,7 @@ public class WikiMediator {
         }
         // for method 3
         requestList.add(pageTitle);
-
+        requestmap.put(tim, pageTitle);
 
         return textInThePage.toString();
     }
@@ -194,70 +200,57 @@ public class WikiMediator {
         // method 5 and 6
         count++;
         countReq.put(count,System.currentTimeMillis()); // store it's current time
+//-----------------------------------------------------------------------------------------------------------------
+        long start = System.currentTimeMillis()-timeLimitInSeconds*1000L;
+        long end = (System.currentTimeMillis());
 
-        long EndingTimeInMillis = System.currentTimeMillis();
-        long StartingTimeInMillis =  System.currentTimeMillis() - timeLimitInSeconds*1000;
+        Set<Long> xx = new HashSet<>();
+        List<String> yy = new ArrayList<>();
+        xx = requestmap.keySet();
+        synchronized (this){
+            for(Long x: xx){
+                if( x >= start && x <end ){
+                    yy.add(requestmap.get(x));
+                }
+            }
+        }
 
-        stringFrequency = new HashMap<>();  // shared across
+        Map<String, Integer> rr = new HashMap<>();
+        // creating a map now that maps string to frequency
+        for(int i=0; i<yy.size();i++){
+            int track= 1;
+            for(int j=i+1; j<yy.size();j++){
+                if(yy.get(i).equals(yy.get(j))){
+                    track++;
+                }
+            }
+            rr.put(yy.get(i),track);
+        }
 
-        List<String> copypage = new ArrayList<>();              // local arraylist
-        List<String> returnlist = new ArrayList<>();           // local arraylist
+        // changing yy so that yy has a descending order
+        for(int i=0; i<rr.size(); i++){
+            for(int j= i+1; j< rr.size(); j++){
+                if(rr.get(yy.get(i)) < rr.get(yy.get(j))){
+                    String temp = yy.get(i);
+                    yy.add(i, yy.get(j));
+                    yy.remove(i+1);
+                    yy.add(j, temp);
+                    yy.remove(j+1);
+                }
+            }
+        }
+        //returning
+
         List<String> ultimatereturnlist = new ArrayList<>();  // local arraylist
-        List<String> copy = new ArrayList<>();
-
-        //
-        synchronized (this){
-            for(String c : requestList){
-                copy.add(c);
-            }
-        }
-        //
-        for(int i=0; i < copy.size(); i++){
-            int k = 1;
-            for(int j=i+1; j<copy.size();j++){
-                if(i!=j && copy.get(i).equals(copy.get(j))){
-                    k++;
-                }
-            }
-            if(!stringFrequency.containsKey(copy.get(i))){
-                stringFrequency.put(copy.get(i),k);
-            }
-        }
-
-        //-----------------------------------------------------------
-        synchronized (this){
-            for(String c: stringFrequency.keySet()){
-                copypage.add(c);
-            }
-        }
-
-        // sort
-        for (int i = 0 ; i < copypage.size(); i ++){
-            for (int j = i+1 ; j < copypage.size(); j ++){
-                if(stringFrequency.get(copypage.get(i)) < stringFrequency.get(copypage.get(j))){
-                    String temp = copypage.get(i);
-                    copypage.add(i, copypage.get(j));
-                    copypage.add(j, temp);
-                }
-            }
-        }
-
-        for (int i =0; i < copypage.size(); i++){
-            if(StartingTimeInMillis < (map.get(copypage.get(i))-timeout*1000) && (map.get(copypage.get(i))-timeout*1000) < EndingTimeInMillis ){
-                returnlist.add(copypage.get(i));
-            }
-        }
-
-        // returning
-        if (maxItems>returnlist.size()){
-            for (int j =0 ; j< returnlist.size(); j++){
-                ultimatereturnlist.add(returnlist.get(j));
+        if (maxItems > yy.size()){
+            for (int j =0 ; j< yy.size(); j++){
+                ultimatereturnlist.add(yy.get(j));
             }
             return ultimatereturnlist;
         }
         else{
-            for (int j =0 ; j< maxItems; j++){
-                ultimatereturnlist.add(returnlist.get(j));
+            for (int j =0 ; j < maxItems; j++){
+                ultimatereturnlist.add(yy.get(j));
             }
             return ultimatereturnlist;
         }
@@ -289,7 +282,7 @@ public class WikiMediator {
 
         for(int i=0; i<targetList.size();i++){
             int num =0;
-            long time = countReq.get(targetList.get(i)) - timeWindowInSeconds*1000;
+            long time = countReq.get(targetList.get(i)) - timeWindowInSeconds*1000L;
             for(int j=i+1; j<targetList.size(); j++){
                 if(countReq.get(targetList.get(j)) > time){
                     num++;
@@ -358,30 +351,38 @@ public class WikiMediator {
         String s1 = new String();
         String s2 = new String();
         s1 = wk.getPage("NBA");
+
         s2 = wk.getPage("China");
         System.out.println(s1);
         System.out.println(s2);
 
-        List<String> ll1 = new ArrayList<>();
-        List<String> ll2 = new ArrayList<>();
+        List<String> ll1 = new ArrayList<>(); List<String> ll2 = new ArrayList<>();
         ll1 = wk.zeitgeist(10);
         ll2 = wk.zeitgeist(5);
         System.out.println("Task3");
         System.out.println(ll1);
         System.out.println(ll2);
+        System.out.println("Task4");
+        List<String> www = new ArrayList<>();
+        www = wk.trending(1,4);
+        for(int i=0;i<www.size();i++){
+            System.out.println(www.get(i));
+        }
+        //lt2 = wk.trending(1,2);
 
-        WikiMediator wtt = new WikiMediator(3, 10);
-        List<String> wl1 = new ArrayList<>();
-        List<String> wl2 = new ArrayList<>();
-        List<String> wl3 = new ArrayList<>();
-        List<String> wl4 = new ArrayList<>();
-        wl1 = wtt.search("Napolean", 5);
-        wl2 = wtt.search("Napolean", 5);
-        wl3 = wtt.search("Napolean", 5);
-        wl4 = wtt.search("Napolean", 5);
-        List<String> tt = new ArrayList<>();
-        tt= wtt.zeitgeist(10);
-        System.out.println(tt);
+
+//        WikiMediator wtt = new WikiMediator(3, 10);
+//        List<String> wl1 = new ArrayList<>();
+//        List<String> wl2 = new ArrayList<>();
+//        List<String> wl3 = new ArrayList<>();
+//        List<String> wl4 = new ArrayList<>();
+//        wl1 = wtt.search("Napolean", 5);
+//        wl2 = wtt.search("Napolean", 5);
+//        wl3 = wtt.search("Napolean", 5);
+//        wl4 = wtt.search("Napolean", 5);
+//        List<String> tt = new ArrayList<>();
+//        tt= wtt.zeitgeist(10);
+//        System.out.println(tt);
 
 
 
