@@ -195,7 +195,6 @@ public class WikiMediator {
         count++;
         countReq.put(count,System.currentTimeMillis()); // store it's current time
 
-
         long EndingTimeInMillis = System.currentTimeMillis();
         long StartingTimeInMillis =  System.currentTimeMillis() - timeLimitInSeconds*1000;
 
@@ -269,16 +268,81 @@ public class WikiMediator {
         count++;
         countReq.put(count,System.currentTimeMillis()); // store it's current time
         //----------------------------------------------------------------------------
-        int num;
+        // sort the countReq
         Set<Integer> keyset = new HashSet<>();
         keyset = countReq.keySet();
+        List<Integer> targetList = List.copyOf(keyset);
 
-        return 0;
+        for(int i=0; i < keyset.size(); i++){
+            for(int j = i+1; j< keyset.size();j++){
+                if(countReq.get(targetList.get(i))<countReq.get(targetList.get(j))){
+                    int temp = targetList.get(j);
+                    targetList.add(i,targetList.get(j));
+                    targetList.remove(i+1);
+                    targetList.add(j,temp);
+                    targetList.remove(j+1);
+                }
+            }
+        }
+
+        int [] numarr = new int[targetList.size()];
+
+        for(int i=0; i<targetList.size();i++){
+            int num =0;
+            long time = countReq.get(targetList.get(i)) - timeWindowInSeconds*1000;
+            for(int j=i+1; j<targetList.size(); j++){
+                if(countReq.get(targetList.get(j)) > time){
+                    num++;
+                }
+            }
+            numarr[i] = num;
+        }
+
+        Arrays.sort(numarr);
+
+        return numarr[0];
     }
 
     int windowedPeakLoad(){
+        // method 5 and 6
+//        count++;
+//        countReq.put(count,System.currentTimeMillis()); // store it's current time
+        //----------------------------------------------------------------------------
 
-        return 0;
+        // sort the countReq
+        Set<Integer> keyset = new HashSet<>();
+        keyset = countReq.keySet();
+        List<Integer> targetList = List.copyOf(keyset);
+
+        for(int i=0; i < keyset.size(); i++){
+            for(int j = i+1; j< keyset.size();j++){
+                if(countReq.get(targetList.get(i))<countReq.get(targetList.get(j))){
+                    int temp = targetList.get(j);
+                    targetList.add(i,targetList.get(j));
+                    targetList.remove(i+1);
+                    targetList.add(j,temp);
+                    targetList.remove(j+1);
+                }
+            }
+        }
+
+        int [] numarr = new int[targetList.size()];
+
+        for(int i=0; i<targetList.size();i++){
+            int num =0;
+            long time = countReq.get(targetList.get(i)) - 30*1000;
+            for(int j=i+1; j<targetList.size(); j++){
+                if(countReq.get(targetList.get(j)) > time){
+                    num++;
+                }
+            }
+            numarr[i] = num;
+        }
+
+        Arrays.sort(numarr);
+
+        return numarr[0];
+
     }
 
     public static void main(String[] args){
