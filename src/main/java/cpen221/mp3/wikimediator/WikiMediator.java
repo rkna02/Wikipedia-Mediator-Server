@@ -25,13 +25,13 @@ public class WikiMediator {
 
     private int capacity;
     private int timeout;
-    String str;               // so far no use
-    Map <String ,Long> map;  // map of pages and their time stamp
-    List <String> pageList; // a list of pages
+    private String str;               // so far no use
+    private Map <String ,Long> map;  // map of pages and their time stamp
+    private List <String> pageList; // a list of pages
 
     //method 3
-    List <String> requestList;   // a list of strings of request sent in getpage and search
-    Map <String, Integer> stringFrequency; // a map of requests and their frequency
+    private List <String> requestList;   // a list of strings of request sent in getpage and search
+    private Map <String, Integer> stringFrequency; // a map of requests and their frequency
     // private int limitNum;
 
     public WikiMediator(int capacity, int stalenessInterval){
@@ -45,24 +45,24 @@ public class WikiMediator {
         pageList = new ArrayList<>();
         requestList = new ArrayList<>();
         stringFrequency = new HashMap<>();
-        //limitNum = 0;
+
     }
 
-    public List<String> search(String query, int limit){
+    private List<String> search(String query, int limit){
         Wiki wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         List<String> searchlist = new ArrayList<>();
         searchlist = wiki.search(query,limit);
-         //   System.out.println(searchlist);
+
         // for method 3
         requestList.add(query);
 
         return searchlist;
     }
 
-    public String getPage(String pageTitle){
+    private String getPage(String pageTitle){
         Wiki wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         // Gets the text of the main page and prints it.
-          //  System.out.println(wiki.getPageText(pageTitle));
+
         StringBuilder textInThePage = new StringBuilder();
         textInThePage.append(wiki.getPageText(pageTitle));
 
@@ -92,11 +92,10 @@ public class WikiMediator {
 
         // for method 3
         requestList.add(pageTitle);
-       // limitNum++;
         return textInThePage.toString();
     }
 
-     List<String> zeitgeist(int limit){
+    private List<String> zeitgeist(int limit){
 
         List<String> copy = new ArrayList<>();
         Set<String> copy2 = new HashSet<>();
@@ -154,7 +153,7 @@ public class WikiMediator {
     }
 
 
-    List<String> trending(int timeLimitInSeconds, int maxItems){
+    private List<String> trending(int timeLimitInSeconds, int maxItems){
         long EndingTimeInMillis = System.currentTimeMillis();
         long StartingTimeInMillis =  System.currentTimeMillis() - timeLimitInSeconds*1000;
 

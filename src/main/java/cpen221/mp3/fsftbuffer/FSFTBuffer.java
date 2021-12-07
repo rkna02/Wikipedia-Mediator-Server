@@ -30,7 +30,7 @@ public class FSFTBuffer<T extends Bufferable> {
         // TODO: implement this constructor
         this.capacity = capacity;
         this.timeout = timeout;
-        //queue = new PriorityQueue<>();
+
         list = new ArrayList<>();
         map = new HashMap<>();
 
@@ -105,7 +105,7 @@ public class FSFTBuffer<T extends Bufferable> {
             signature. */
 
         for(int i=0; i< list.size();i++){
-            if(list.get(i).id() == id){
+            if(list.get(i).id().equals(id) ){
                 // update the object's timeout time
                 map.put(list.get(i).id(), System.currentTimeMillis()+(timeout*1000));
                 return list.get(i);
@@ -128,7 +128,7 @@ public class FSFTBuffer<T extends Bufferable> {
         long timeInSeconds = System.currentTimeMillis()+(timeout*1000);
 
         for(int i = 0 ;i <list.size(); i++){
-            if(list.get(i).id() == id){
+            if(list.get(i).id().equals(id)){
                 map.put(list.get(i).id(), timeInSeconds);
                 return true;
             }
@@ -151,7 +151,7 @@ public class FSFTBuffer<T extends Bufferable> {
         long timeInSeconds = System.currentTimeMillis()+(timeout*1000);
 
         for(int i = 0 ;i <list.size(); i++){
-            if(list.get(i).id() == t.id()){
+            if(list.get(i).id().equals(t.id())){
                 map.put(list.get(i).id(), timeInSeconds);
                 return true;
             }
