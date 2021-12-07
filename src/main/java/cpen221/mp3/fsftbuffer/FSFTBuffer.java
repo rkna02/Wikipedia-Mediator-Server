@@ -31,8 +31,8 @@ public class FSFTBuffer<T extends Bufferable> {
         this.capacity = capacity;
         this.timeout = timeout;
 
-        list = new ArrayList<>();
-        map = new HashMap<>();
+        list = Collections.synchronizedList(new ArrayList<>()); // wrapper
+        map = Collections.synchronizedMap(new HashMap<>()); //wrapper
 
 
     }
@@ -43,9 +43,8 @@ public class FSFTBuffer<T extends Bufferable> {
     public FSFTBuffer() {
         this(DSIZE, DTIMEOUT);
         // added
-        //queue = new PriorityQueue<>();
-        list = new ArrayList<>();
-        map = new HashMap<>();
+        list = Collections.synchronizedList(new ArrayList<>());
+        map = Collections.synchronizedMap(new HashMap<>());
     }
 
 
@@ -58,11 +57,14 @@ public class FSFTBuffer<T extends Bufferable> {
         // TODO: implement this method
 
         // remove any object that has already timeout
-        for(int i=0; i<list.size(); i++){
-            if((map.get(list.get(i).id()) > System.currentTimeMillis())){
-                list.remove(i);
+        synchronized (this){
+            for(int i=0; i<list.size(); i++){
+                if((map.get(list.get(i).id()) > System.currentTimeMillis())){
+                    list.remove(i);
+                }
             }
         }
+
 
         if(list.size() < capacity) {
             list.add(t);
@@ -75,10 +77,12 @@ public class FSFTBuffer<T extends Bufferable> {
             // find lru
             String idd = list.get(0).id();
             int track = 0;
-            for(int i = 1 ;i <list.size(); i++){
-                if(map.get(list.get(i).id())<map.get(idd)){
-                    idd = list.get(i).id();
-                    track = i;
+            synchronized (this){
+                for(int i = 1 ;i <list.size(); i++){
+                    if(map.get(list.get(i).id())<map.get(idd)){
+                        idd = list.get(i).id();
+                        track = i;
+                    }
                 }
             }
             list.remove(list.get(track));
@@ -103,14 +107,16 @@ public class FSFTBuffer<T extends Bufferable> {
         /* Do not return null. Throw a suitable checked exception when an object
             is not in the cache. You can add the checked exception to the method
             signature. */
-
-        for(int i=0; i< list.size();i++){
-            if(list.get(i).id().equals(id) ){
-                // update the object's timeout time
-                map.put(list.get(i).id(), System.currentTimeMillis()+(timeout*1000));
-                return list.get(i);
+        synchronized (this){
+            for(int i=0; i< list.size();i++){
+                if(list.get(i).id().equals(id) ){
+                    // update the object's timeout time
+                    map.put(list.get(i).id(), System.currentTimeMillis()+(timeout*1000));
+                    return list.get(i);
+                }
             }
         }
+
 
         throw new NullPointerException(); // what kind of exception should we throw tho
     }
@@ -127,10 +133,12 @@ public class FSFTBuffer<T extends Bufferable> {
         /* TODO: Implement this method */
         long timeInSeconds = System.currentTimeMillis()+(timeout*1000);
 
-        for(int i = 0 ;i <list.size(); i++){
-            if(list.get(i).id().equals(id)){
-                map.put(list.get(i).id(), timeInSeconds);
-                return true;
+        synchronized (this){
+            for(int i = 0 ;i <list.size(); i++){
+                if(list.get(i).id().equals(id)){
+                    map.put(list.get(i).id(), timeInSeconds);
+                    return true;
+                }
             }
         }
 
@@ -150,10 +158,12 @@ public class FSFTBuffer<T extends Bufferable> {
 
         long timeInSeconds = System.currentTimeMillis()+(timeout*1000);
 
-        for(int i = 0 ;i <list.size(); i++){
-            if(list.get(i).id().equals(t.id())){
-                map.put(list.get(i).id(), timeInSeconds);
-                return true;
+        synchronized (this){
+            for(int i = 0 ;i <list.size(); i++){
+                if(list.get(i).id().equals(t.id())){
+                    map.put(list.get(i).id(), timeInSeconds);
+                    return true;
+                }
             }
         }
 
