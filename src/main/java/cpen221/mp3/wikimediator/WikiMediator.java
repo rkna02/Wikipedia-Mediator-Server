@@ -159,6 +159,7 @@ public class WikiMediator {
 
         List<String> copypage = new ArrayList<>();
 
+
         for(String c: pageList){
             copypage.add(c);
         }
@@ -176,7 +177,7 @@ public class WikiMediator {
         List<String> returnlist = new ArrayList<>();
         List<String> ultimatereturnlist = new ArrayList<>();
         for (int i =0; i<copypage.size(); i++){
-            if(StartingTimeInMillis<map.get(copypage.get(i)) && map.get(copypage.get(i)) < EndingTimeInMillis ){
+            if(StartingTimeInMillis < map.get(copypage.get(i)) && map.get(copypage.get(i)) < EndingTimeInMillis ){
                 returnlist.add(copypage.get(i));
             }
         }

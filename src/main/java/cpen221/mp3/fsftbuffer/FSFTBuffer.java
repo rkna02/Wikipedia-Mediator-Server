@@ -34,7 +34,6 @@ public class FSFTBuffer<T extends Bufferable> {
         list = Collections.synchronizedList(new ArrayList<>()); // wrapper
         map = Collections.synchronizedMap(new HashMap<>()); //wrapper
 
-
     }
 
     /**
@@ -115,10 +114,11 @@ public class FSFTBuffer<T extends Bufferable> {
                     return list.get(i);
                 }
             }
+            throw new NullPointerException(); // what kind of exception should we throw tho
         }
 
 
-        throw new NullPointerException(); // what kind of exception should we throw tho
+
     }
 
     /**
