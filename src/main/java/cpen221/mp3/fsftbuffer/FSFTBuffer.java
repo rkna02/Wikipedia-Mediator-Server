@@ -106,6 +106,15 @@ public class FSFTBuffer<T extends Bufferable> {
         /* Do not return null. Throw a suitable checked exception when an object
             is not in the cache. You can add the checked exception to the method
             signature. */
+        // remove any object that has already timeout
+        synchronized (this){
+            for(int i=0; i<list.size(); i++){
+                if((map.get(list.get(i).id()) > System.currentTimeMillis())){
+                    list.remove(i);
+                }
+            }
+        }
+
         synchronized (this){
             for(int i=0; i< list.size();i++){
                 if(list.get(i).id().equals(id) ){
@@ -131,7 +140,17 @@ public class FSFTBuffer<T extends Bufferable> {
      */
     public boolean touch(String id) {
         /* TODO: Implement this method */
+
         long timeInSeconds = System.currentTimeMillis()+(timeout*1000);
+
+        // remove any object that has already timeout
+        synchronized (this){
+            for(int i=0; i<list.size(); i++){
+                if((map.get(list.get(i).id()) > System.currentTimeMillis())){
+                    list.remove(i);
+                }
+            }
+        }
 
         synchronized (this){
             for(int i = 0 ;i <list.size(); i++){
@@ -157,6 +176,15 @@ public class FSFTBuffer<T extends Bufferable> {
         /* TODO: implement this method */
 
         long timeInSeconds = System.currentTimeMillis()+(timeout*1000);
+
+        // remove any object that has already timeout
+        synchronized (this){
+            for(int i=0; i<list.size(); i++){
+                if((map.get(list.get(i).id()) > System.currentTimeMillis())){
+                    list.remove(i);
+                }
+            }
+        }
 
         synchronized (this){
             for(int i = 0 ;i <list.size(); i++){
