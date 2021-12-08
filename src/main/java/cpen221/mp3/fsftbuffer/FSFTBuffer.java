@@ -21,19 +21,19 @@ public class FSFTBuffer<T extends Bufferable> {
     private final int timeout;
 
     /** Synchronized list that stores objects of type T */
-    private final List<T> list = Collections.synchronizedList(new ArrayList<>());
+    private final List<T> objList = Collections.synchronizedList(new ArrayList<>());
 
     /** Synchronized map that stores object ids and object expiry times */
-    private final Map <String, Long> map = Collections.synchronizedMap(new HashMap<>());
+    private final Map <String, Long> idExpiry = Collections.synchronizedMap(new HashMap<>());
 
     /** Synchronized map that stores object ids and object's time of last usage */
-    private final Map <String, Long> usage = Collections.synchronizedMap(new HashMap<>());
+    private final Map <String, Long> idUsage = Collections.synchronizedMap(new HashMap<>());
 
     //Representation Invariant:
-    //  list != null
-    //  map != null
-    //  usage != null
-    //  map.size() == usage.size() == list.size()
+    //  objList elements != null
+    //  idExpiry elements != null
+    //  idUsage elements != null
+    //  objList.size() == idExpiry.size() == idUsage.size()
 
     //Abstract Function:
     //  Buffer's maximum number of stored objects and expiry time is
@@ -45,20 +45,21 @@ public class FSFTBuffer<T extends Bufferable> {
     //  timeout = 3600 means the buffer will expire after 3600 seconds (1 hour)
     //
     //  Storage of objects is represented by a synchronized list
-    //  list.get(N) represents an object of type T that is in the buffer
+    //  objList.get(N) represents an object of type T that is in the buffer
     //
-    //  Synchronized map: map, represents object ids as key and object expiry times as value
-    //  map<N, M> represents that the object id is N
+    //  Synchronized map: idExpiry, represents object ids as key and object expiry times as value
+    //  idExpiry<N, M> represents that the object id is N
     //  and the object expiry time is at M seconds
     //
-    //  Synchronized map: usage, represents object ids as key and object time of last usage as value
-    //  usage<N, M> represents that the object id is N
+    //  Synchronized map: idUsage, represents object ids as key and object time of last usage as value
+    //  idUsage<N, M> represents that the object id is N
     //  and the object last usage time is at M seconds
-    
+
     //  Thread Safety Argument:
     //  capacity and timeout are final, so those variables are immutable and thread-safe
-    //  list, map, and usage are final, so those variables are immutable and thread-safe
-    //  list,map, and usage points to thread safe datatypes
+    //  objList, idExpiry, and idUsage are final, so those variables are immutable and thread-safe
+    //  objList, idExpiry, and idUsage are synchronized datatypes 
+    //  objList, idExpiry, and idUsage points to thread safe datatypes
 
     /**
      * Checks the representation invariant.
@@ -66,19 +67,25 @@ public class FSFTBuffer<T extends Bufferable> {
      * effects: no effects if this satisfies rep invariant,
      * 		    otherwise throws a runtime exception.
      */
-    private void checkRep() {
-        if (list == null) {
-            throw new RuntimeException("ERROR: instantiated list is null");
+    synchronized private void checkRep() {
+        for (int i = 0; i < objList.size(); i++) {
+            if (objList.get(i) == null) {
+                throw new RuntimeException("ERROR: instantiated list is null");
+            }
         }
-        if (map == null) {
-            throw new RuntimeException("ERROR: map is null");
+        for (int i = 0; i < idExpiry.size(); i++) {
+            if (idExpiry.get(i) == null) {
+                throw new RuntimeException("ERROR: instantiated list is null");
+            }
         }
-        if (usage == null) {
-            throw new RuntimeException("ERROR: usage is null");
+        for (int i = 0; i < idUsage.size(); i++) {
+            if (idUsage.get(i) == null) {
+                throw new RuntimeException("ERROR: instantiated list is null");
+            }
         }
-        if (usage.size() != map.size() ||
-            usage.size() != list.size() ||
-            map.size() != list.size()) {
+        if (idUsage.size() != idExpiry.size() ||
+            idUsage.size() != objList.size() ||
+            idExpiry.size() != objList.size()) {
             throw new RuntimeException("ERROR: missing or extra data in buffer");
         }
     }
@@ -127,43 +134,43 @@ public class FSFTBuffer<T extends Bufferable> {
 
         // remove all stale objects
         synchronized (this) {
-            for(int i=0; i<list.size(); i++){
-                if(map.get(list.get(i).id()) < (System.currentTimeMillis() / 1000L)) {
-                    list.remove(i);
-                    map.remove(list.get(i).id());
-                    usage.remove(list.get(i).id());
+            for(int i=0; i<objList.size(); i++){
+                if(idExpiry.get(objList.get(i).id()) < (System.currentTimeMillis() / 1000L)) {
+                    objList.remove(i);
+                    idExpiry.remove(objList.get(i).id());
+                    idUsage.remove(objList.get(i).id());
                 }
             }
         }
 
-        //Put object 
-        if (list.size() < capacity) {
+        //Put object
+        if (objList.size() < capacity) {
             synchronized (this) {
-                list.add(t);
-                map.put(t.id(), timeInSeconds);
-                usage.put(t.id(), timeInSeconds);
+                objList.add(t);
+                idExpiry.put(t.id(), timeInSeconds);
+                idUsage.put(t.id(), timeInSeconds);
             }
             checkRep();
             return true;
-        } else if (list.size() == capacity) {
+        } else if (objList.size() == capacity) {
             // remove LRU and then add
-            long minimum = usage.get(list.get(0).id());
+            long minimum = idUsage.get(objList.get(0).id());
             int LRU = 0;
             synchronized (this) {
-                for(int i=0; i < list.size(); i++) {
-                    if (usage.get(list.get(i).id()) < minimum) {
-                        minimum = usage.get(list.get(i).id());
+                for(int i=0; i < objList.size(); i++) {
+                    if (idUsage.get(objList.get(i).id()) < minimum) {
+                        minimum = idUsage.get(objList.get(i).id());
                         LRU = i;
                     }
                 }
             }
             synchronized (this) {
-                list.remove(LRU);
-                list.add(t);
-                map.remove(list.get(LRU).id());
-                map.put(t.id(), timeInSeconds);
-                usage.remove(list.get(LRU).id());
-                usage.put(t.id(), timeInSeconds);
+                objList.remove(LRU);
+                objList.add(t);
+                idExpiry.remove(objList.get(LRU).id());
+                idExpiry.put(t.id(), timeInSeconds);
+                idUsage.remove(objList.get(LRU).id());
+                idUsage.put(t.id(), timeInSeconds);
             }
             checkRep();
             return true;
@@ -185,15 +192,15 @@ public class FSFTBuffer<T extends Bufferable> {
         long timeInSeconds = (System.currentTimeMillis() / 1000L) + timeout;
 
         synchronized (this){
-            for(int i=0; i< list.size();i++){
-                if(list.get(i).id().equals(id)){
-                    if (map.get(list.get(i).id()) < (System.currentTimeMillis() / 1000L)) {
+            for(int i=0; i< objList.size();i++){
+                if(objList.get(i).id().equals(id)){
+                    if (idExpiry.get(objList.get(i).id()) < (System.currentTimeMillis() / 1000L)) {
                         throw new RuntimeException("Stale object, unable to retrieve");
                     } else {
-                        usage.remove(list.get(i).id());
-                        usage.put(list.get(i).id(), timeInSeconds);
+                        idUsage.remove(objList.get(i).id());
+                        idUsage.put(objList.get(i).id(), timeInSeconds);
                         checkRep();
-                        return list.get(i);
+                        return objList.get(i);
                     }
                 }
             }
@@ -213,13 +220,13 @@ public class FSFTBuffer<T extends Bufferable> {
         long timeInSeconds = (System.currentTimeMillis() / 1000L) + timeout;
 
         synchronized (this) {
-            for(int i=0; i <list.size(); i++){
-                if(list.get(i).id().equals(id)){
-                    if (map.get(list.get(i).id()) < (System.currentTimeMillis() / 1000L)) {
+            for(int i=0; i <objList.size(); i++){
+                if(objList.get(i).id().equals(id)){
+                    if (idExpiry.get(objList.get(i).id()) < (System.currentTimeMillis() / 1000L)) {
                         return false;
                     } else {
-                        map.remove(list.get(i).id());
-                        map.put(list.get(i).id(), timeInSeconds);
+                        idExpiry.remove(objList.get(i).id());
+                        idExpiry.put(objList.get(i).id(), timeInSeconds);
                         checkRep();
                         return true;
                     }
@@ -242,23 +249,23 @@ public class FSFTBuffer<T extends Bufferable> {
 
         // remove any object that has already timed out
         synchronized (this){
-            for(int i=0; i<list.size(); i++){
-                if(map.get(list.get(i).id()) < (System.currentTimeMillis() / 1000L)) {
-                    list.remove(i);
-                    map.remove(list.get(i).id());
-                    usage.remove(list.get(i).id());
+            for(int i=0; i<objList.size(); i++){
+                if(idExpiry.get(objList.get(i).id()) < (System.currentTimeMillis() / 1000L)) {
+                    objList.remove(i);
+                    idExpiry.remove(objList.get(i).id());
+                    idUsage.remove(objList.get(i).id());
                 }
             }
         }
 
         // update buffer
         synchronized (this){
-            for(int i=0 ;i <list.size(); i++){
-                if(list.get(i).id().equals(t.id())){
-                    list.remove(i);
-                    list.add(t);
-                    map.remove(list.get(i).id());
-                    map.put(list.get(i).id(), timeInSeconds);
+            for(int i=0 ;i <objList.size(); i++){
+                if(objList.get(i).id().equals(t.id())){
+                    objList.remove(i);
+                    objList.add(t);
+                    idExpiry.remove(objList.get(i).id());
+                    idExpiry.put(objList.get(i).id(), timeInSeconds);
                     checkRep();
                     return true;
                 }
