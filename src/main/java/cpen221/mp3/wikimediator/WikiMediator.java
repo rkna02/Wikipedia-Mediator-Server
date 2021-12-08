@@ -67,7 +67,7 @@ public class WikiMediator {
      * @param limit the numbers of title that the list should return
      * @return a list that contains limit numbers the response from the searching keyword
      */
-    private List<String> search(String query, int limit){
+    public List<String> search(String query, int limit){
         Wiki wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         // method 5 and 6
         long tim = System.currentTimeMillis();
@@ -88,7 +88,7 @@ public class WikiMediator {
      * @param pageTitle the title of the page on wikipedia
      * @return return all the text on that page
      */
-    private String getPage(String pageTitle){
+    public String getPage(String pageTitle){
         Wiki wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         // Gets the text of the main page and prints it.
 
@@ -136,7 +136,7 @@ public class WikiMediator {
      * @param limit the numbers of queries that this method should return
      * @return a list containing limit number of requests that ranked in non-ascending order in terms of frequency
      */
-    private List<String> zeitgeist(int limit){
+    public List<String> zeitgeist(int limit){
         // method 5 and 6
         programCounter.getAndAdd(1);
         countReq.put(programCounter,System.currentTimeMillis()); // store it's current time
@@ -216,7 +216,7 @@ public class WikiMediator {
      * @param maxItems the number of elements that list can return
      * @return return a list of most frequent request in the time interval
      */
-    private List<String> trending(int timeLimitInSeconds, int maxItems){
+    public List<String> trending(int timeLimitInSeconds, int maxItems){
         // method 5 and 6
         programCounter.getAndAdd(1);
         countReq.put(programCounter,System.currentTimeMillis()); // store it's current time
@@ -278,7 +278,7 @@ public class WikiMediator {
      * @param timeWindowInSeconds a interval of time in seconds
      * @return  the max number of request done in time intervals of timeWindowInSeconds seconds
      */
-    private int windowedPeakLoad(int timeWindowInSeconds){
+    public int windowedPeakLoad(int timeWindowInSeconds){
         // method 5 and 6
         programCounter.getAndAdd(1);
         countReq.put(programCounter,System.currentTimeMillis()); // store it's current time
@@ -359,55 +359,6 @@ public class WikiMediator {
 
     }
 
-    public static void main(String[] args){
 
-        WikiMediator wk = new WikiMediator(5, 2);
-        List<String> l1 = new ArrayList<>();
-        List<String> l2 = new ArrayList<>();
-        l1 = wk.search("NCAA", 5);
-        l2 = wk.search("China", 10);
-        System.out.println(l1);
-        System.out.println(l2);
-
-        String s1 = new String();
-        String s2 = new String();
-        s1 = wk.getPage("NBA");
-
-        s2 = wk.getPage("China");
-        System.out.println(s1);
-        System.out.println(s2);
-
-        List<String> ll1 = new ArrayList<>(); List<String> ll2 = new ArrayList<>();
-        ll1 = wk.zeitgeist(10);
-        ll2 = wk.zeitgeist(5);
-        System.out.println("Task3");
-        System.out.println(ll1);
-        System.out.println(ll2);
-        System.out.println("Task4");
-        List<String> www = new ArrayList<>();
-        www = wk.trending(1,4);
-        for(int i=0;i<www.size();i++){
-            System.out.println(www.get(i));
-        }
-        //lt2 = wk.trending(1,2);
-
-
-//        WikiMediator wtt = new WikiMediator(3, 10);
-//        List<String> wl1 = new ArrayList<>();
-//        List<String> wl2 = new ArrayList<>();
-//        List<String> wl3 = new ArrayList<>();
-//        List<String> wl4 = new ArrayList<>();
-//        wl1 = wtt.search("Napolean", 5);
-//        wl2 = wtt.search("Napolean", 5);
-//        wl3 = wtt.search("Napolean", 5);
-//        wl4 = wtt.search("Napolean", 5);
-//        List<String> tt = new ArrayList<>();
-//        tt= wtt.zeitgeist(10);
-//        System.out.println(tt);
-
-
-
-        System.exit(0);
-    }
 }
 
