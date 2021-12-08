@@ -3,10 +3,13 @@ package cpen221.mp3;
 
 import cpen221.mp3.fsftbuffer.Bufferable;
 import cpen221.mp3.fsftbuffer.FSFTBuffer;
+import cpen221.mp3.wikimediator.WikiMediator;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class Tests {
@@ -337,5 +340,54 @@ public class Tests {
         public String id(){
             return str1;
         }
+    }
+    public static void main(String[] args){
+
+        WikiMediator wk = new WikiMediator(5, 2);
+        List<String> l1 = new ArrayList<>();
+        List<String> l2 = new ArrayList<>();
+        l1 = wk.search("NCAA", 5);
+        l2 = wk.search("China", 10);
+        System.out.println(l1);
+        System.out.println(l2);
+
+        String s1 = new String();
+        String s2 = new String();
+        s1 = wk.getPage("NBA");
+
+        s2 = wk.getPage("China");
+        System.out.println(s1);
+        System.out.println(s2);
+
+        List<String> ll1 = new ArrayList<>(); List<String> ll2 = new ArrayList<>();
+        ll1 = wk.zeitgeist(10);
+        ll2 = wk.zeitgeist(5);
+        System.out.println("Task3");
+        System.out.println(ll1);
+        System.out.println(ll2);
+        System.out.println("Task4");
+        List<String> www = new ArrayList<>();
+        www = wk.trending(4,0);
+        System.out.println(www);
+        //lt2 = wk.trending(1,2);
+        int cou;
+        cou = wk.windowedPeakLoad(4);
+        System.out.println(cou);
+//        WikiMediator wtt = new WikiMediator(3, 10);
+//        List<String> wl1 = new ArrayList<>();
+//        List<String> wl2 = new ArrayList<>();
+//        List<String> wl3 = new ArrayList<>();
+//        List<String> wl4 = new ArrayList<>();
+//        wl1 = wtt.search("Napolean", 5);
+//        wl2 = wtt.search("Napolean", 5);
+//        wl3 = wtt.search("Napolean", 5);
+//        wl4 = wtt.search("Napolean", 5);
+//        List<String> tt = new ArrayList<>();
+//        tt= wtt.zeitgeist(10);
+//        System.out.println(tt);
+
+
+
+        System.exit(0);
     }
 }
