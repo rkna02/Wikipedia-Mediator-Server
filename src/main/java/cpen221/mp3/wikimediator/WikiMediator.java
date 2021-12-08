@@ -5,7 +5,6 @@ import org.fastily.jwiki.core.Wiki;
 import java.io.*;
 import java.lang.Thread;
 
-//
 import org.fastily.jwiki.dwrap.Revision;
 import org.fastily.jwiki.core.Wiki;
 
@@ -45,25 +44,32 @@ public class WikiMediator {
     //  requestList elements != null
     //  requestmap elements != null
     //  pcHistory elements != null
-    
+
     //  Abstract Function
     //  Service's maximum number of stored objects and expiry time is
-    //  represented by capacity and timeout respectively
+    //  represented by final integers capacity and timeout respectively
     //  capacity = N represents that the service can hold a maximum of N objects
     //  timeout = M represents that the service will expire after M seconds
     //  Example:
     //  capacity = 5 means the service can hold a maximum of 5 objects
     //  timeout = 3600 means the service will expire after 3600 seconds (1 hour)
     //
-    //  Service's program counter is represented by Atomic Integer programCounter
-    //  programCounter keeps track of the number of programs excuted,
+    //  Service's program counter system is represented by 
+    //  Atomic Integer programCounter and Synchronized map pcHistory
+    //  programCounter keeps track of the number of programs executed,
     //  programCounter starts from 0 and increases by 1 each time an instruction is called
+    //  pcHistory keeps track of the time in milliseconds when program counter updates
     //
-    //  Service's wikipage texts and requests are represented by pageList and requestList respectively
+    //  Service's wikipage texts and requests are represented by Synchronized String lists:
+    //  pageList and requestList respectively
+    //  pageList.get(N) represents a string consisting of all the texts on one wiki page
+    //  requestList.get(N) represents a string consisting of a request
     //  
+    //  Service's time stamps when a page is accessed is represented by synchronized map pageAccess
+    //  pageAccess<M, N> represent that all the texts on page M is accessed at time M (milliseconds)
+    //  Service's request times are represented by synchronized map requestmap
+    //  pageAccess<M, N> represent that request M happened at time N (milliseconds)
     
-
-
     //  Thread-safe Arguments
     //  capacity and timeout are final, so those variables are immutable and thread-safe
     //  pageAccess, pageList, requestList, requestmap, programCounter, pcHistory
@@ -101,11 +107,21 @@ public class WikiMediator {
             }
         }
     }
-
+    
+    /**
+     * Create a wikiMediator with a fixed capacity and a timeout value.
+     *
+     * @param capacity          the number of wikipages the mediator can hold
+     *                          requires: capacity >= 1
+     * @param stalenessInterval the duration, in seconds, a page should be in the 
+     *                          mediator before it times out
+     *                          requires: timeout >= 1
+     */
     public WikiMediator(int capacity, int stalenessInterval) {
         this.capacity= capacity;
         this.timeout = stalenessInterval;
     }
+    
     /**
      *
      * @param query content that clients can search on wikipedia
@@ -128,6 +144,7 @@ public class WikiMediator {
 
         return searchlist;
     }
+    
     /**
      *
      * @param pageTitle the title of the page on wikipedia
@@ -137,7 +154,6 @@ public class WikiMediator {
         Wiki wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         // Gets the text of the main page and prints it.
 
-        //method 5 and 6
         long tim = System.currentTimeMillis();
         programCounter.getAndAdd(1);
         pcHistory.put(programCounter, tim); // store it's current time
@@ -176,6 +192,7 @@ public class WikiMediator {
 
         return textInThePage.toString();
     }
+    
     /**
      *
      * @param limit the numbers of queries that this method should return
@@ -240,7 +257,8 @@ public class WikiMediator {
             }
         }
 
-        // return a list that is in descending order of the frequency of strings that appear in the query getPage and search
+        // return a list that is in descending order of the frequency of strings 
+        // that appear in the query getPage and search
         if(copy.size() < limit) {
             for(int i=0; i<copy.size(); i++){
                 zeitlist.add(copy.get(i));
@@ -255,7 +273,7 @@ public class WikiMediator {
         }
     }
 
-/**
+    /**
      *
      * @param timeLimitInSeconds time intervals in seconds
      * @param maxItems the number of elements that list can return
@@ -265,7 +283,7 @@ public class WikiMediator {
         // method 5 and 6
         programCounter.getAndAdd(1);
         pcHistory.put(programCounter,System.currentTimeMillis()); // store it's current time
-//-----------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------
         long start = System.currentTimeMillis()-timeLimitInSeconds*1000L;
         long end = (System.currentTimeMillis());
 
@@ -317,6 +335,7 @@ public class WikiMediator {
             return ultimatereturnlist;
         }
     }
+    
      /**
      *
      * @param timeWindowInSeconds a interval of time in seconds
@@ -362,6 +381,7 @@ public class WikiMediator {
 
         return numarr[targetList.size()-1];
     }
+    
     /**
      *
      * @return the max number of request done in time intervals of 30 seconds
