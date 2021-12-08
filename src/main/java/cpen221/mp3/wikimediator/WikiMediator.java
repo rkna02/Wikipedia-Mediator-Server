@@ -58,6 +58,12 @@ public class WikiMediator {
 
     }
 
+    /**
+     *
+     * @param query
+     * @param limit
+     * @return
+     */
     private List<String> search(String query, int limit){
         Wiki wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         // method 5 and 6
@@ -96,7 +102,6 @@ public class WikiMediator {
             }
         }
 
-
         if(pageList.size() < capacity){
             pageList.add(textInThePage.toString());
             map.put(textInThePage.toString(), System.currentTimeMillis()+timeout*1000);
@@ -127,7 +132,7 @@ public class WikiMediator {
         countReq.put(count,System.currentTimeMillis()); // store it's current time
         //------------------------------
         StringBuilder commonStr = new StringBuilder();
-        stringFrequency = new HashMap<>();
+        Map<String,Integer>stringFrequency = new HashMap<>();
         List<String> copy = new ArrayList<>();
         Set<String> copy2 = new HashSet<>();
         List<String> zeitlist = new ArrayList<>();
@@ -204,59 +209,56 @@ public class WikiMediator {
         long start = System.currentTimeMillis()-timeLimitInSeconds*1000L;
         long end = (System.currentTimeMillis());
 
-        Set<Long> xx = new HashSet<>();
-        List<String> yy = new ArrayList<>();
-        xx = requestmap.keySet();
+        Set<Long> tempset = new HashSet<>();
+        List<String> templist = new ArrayList<>();
+        tempset = requestmap.keySet();
         synchronized (this){
-            for(Long x: xx){
+            for(Long x: tempset){
                 if( x >= start && x <end ){
-                    yy.add(requestmap.get(x));
+                    templist.add(requestmap.get(x));
                 }
             }
         }
-
-        Map<String, Integer> rr = new HashMap<>();
+        Map<String, Integer> tempmap = new HashMap<>();
         // creating a map now that maps string to frequency
-        for(int i=0; i<yy.size();i++){
+        for(int i=0; i<templist.size();i++){
             int track= 1;
-            for(int j=i+1; j<yy.size();j++){
-                if(yy.get(i).equals(yy.get(j))){
+            for(int j=i+1; j<templist.size();j++){
+                if(templist.get(i).equals(templist.get(j))){
                     track++;
                 }
             }
-            rr.put(yy.get(i),track);
+            tempmap.put(templist.get(i),track);
         }
-
         // changing yy so that yy has a descending order
-        for(int i=0; i<rr.size(); i++){
-            for(int j= i+1; j< rr.size(); j++){
-                if(rr.get(yy.get(i)) < rr.get(yy.get(j))){
-                    String temp = yy.get(i);
-                    yy.add(i, yy.get(j));
-                    yy.remove(i+1);
-                    yy.add(j, temp);
-                    yy.remove(j+1);
+        for(int i=0; i<tempmap.size(); i++){
+            for(int j= i+1; j< tempmap.size(); j++){
+                if(tempmap.get(templist.get(i)) < tempmap.get(templist.get(j))){
+                    String temp = templist.get(i);
+                    templist.add(i, templist.get(j));
+                    templist.remove(i+1);
+                    templist.add(j, temp);
+                    templist.remove(j+1);
                 }
             }
         }
         //returning
-
         List<String> ultimatereturnlist = new ArrayList<>();  // local arraylist
-        if (maxItems > yy.size()){
-            for (int j =0 ; j< yy.size(); j++){
-                ultimatereturnlist.add(yy.get(j));
+        if (maxItems > templist.size()){
+            for (int j =0 ; j< templist.size(); j++){
+                ultimatereturnlist.add(templist.get(j));
             }
             return ultimatereturnlist;
         }
         else{
             for (int j =0 ; j < maxItems; j++){
-                ultimatereturnlist.add(yy.get(j));
+                ultimatereturnlist.add(templist.get(j));
             }
             return ultimatereturnlist;
         }
     }
 
-    int windowedPeakLoad(int timeWindowInSeconds){
+    private int windowedPeakLoad(int timeWindowInSeconds){
         // method 5 and 6
         count++;
         countReq.put(count,System.currentTimeMillis()); // store it's current time
@@ -264,12 +266,13 @@ public class WikiMediator {
         // sort the countReq
         Set<Integer> keyset = new HashSet<>();
         keyset = countReq.keySet();
-        List<Integer> targetList = List.copyOf(keyset);
+        List<Integer> targetList = new ArrayList<>(keyset);
+
 
         for(int i=0; i < keyset.size(); i++){
             for(int j = i+1; j< keyset.size();j++){
                 if(countReq.get(targetList.get(i))<countReq.get(targetList.get(j))){
-                    int temp = targetList.get(j);
+                    int temp = targetList.get(i);
                     targetList.add(i,targetList.get(j));
                     targetList.remove(i+1);
                     targetList.add(j,temp);
@@ -281,7 +284,7 @@ public class WikiMediator {
         int [] numarr = new int[targetList.size()];
 
         for(int i=0; i<targetList.size();i++){
-            int num =0;
+            int num =1;
             long time = countReq.get(targetList.get(i)) - timeWindowInSeconds*1000L;
             for(int j=i+1; j<targetList.size(); j++){
                 if(countReq.get(targetList.get(j)) > time){
@@ -293,10 +296,10 @@ public class WikiMediator {
 
         Arrays.sort(numarr);
 
-        return numarr[0];
+        return numarr[targetList.size()-1];
     }
 
-    int windowedPeakLoad(){
+    private int windowedPeakLoad(){
         // method 5 and 6
 //        count++;
 //        countReq.put(count,System.currentTimeMillis()); // store it's current time
@@ -310,7 +313,7 @@ public class WikiMediator {
         for(int i=0; i < keyset.size(); i++){
             for(int j = i+1; j< keyset.size();j++){
                 if(countReq.get(targetList.get(i))<countReq.get(targetList.get(j))){
-                    int temp = targetList.get(j);
+                    int temp = targetList.get(i);
                     targetList.add(i,targetList.get(j));
                     targetList.remove(i+1);
                     targetList.add(j,temp);
@@ -319,21 +322,21 @@ public class WikiMediator {
             }
         }
 
-        int [] numarr = new int[targetList.size()];
+        int [] numarr2 = new int[targetList.size()];
 
         for(int i=0; i<targetList.size();i++){
-            int num =0;
-            long time = countReq.get(targetList.get(i)) - 30*1000;
+            int num =1;
+            long time = countReq.get(targetList.get(i)) - 30L*1000L;
             for(int j=i+1; j<targetList.size(); j++){
                 if(countReq.get(targetList.get(j)) > time){
                     num++;
                 }
             }
-            numarr[i] = num;
+            numarr2[i] = num;
         }
 
-        Arrays.sort(numarr);
-        return numarr[0];
+        Arrays.sort(numarr2);
+        return numarr2[targetList.size()-1];
 
     }
 
@@ -363,13 +366,12 @@ public class WikiMediator {
         System.out.println(ll2);
         System.out.println("Task4");
         List<String> www = new ArrayList<>();
-        www = wk.trending(1,4);
-        for(int i=0;i<www.size();i++){
-            System.out.println(www.get(i));
-        }
+        www = wk.trending(4,0);
+        System.out.println(www);
         //lt2 = wk.trending(1,2);
-
-
+        int cou;
+        cou = wk.windowedPeakLoad(4);
+        System.out.println(cou);
 //        WikiMediator wtt = new WikiMediator(3, 10);
 //        List<String> wl1 = new ArrayList<>();
 //        List<String> wl2 = new ArrayList<>();

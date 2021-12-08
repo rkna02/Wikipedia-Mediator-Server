@@ -1,14 +1,13 @@
 package cpen221.mp3;
-import cpen221.mp3.fsftbuffer.Bufferable;
 
+
+import cpen221.mp3.fsftbuffer.Bufferable;
+import cpen221.mp3.fsftbuffer.FSFTBuffer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import cpen221.mp3.fsftbuffer.FSFTBuffer;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+
 
 public class Tests {
 
@@ -38,7 +37,7 @@ public class Tests {
      * check put
      */
     @Test
-    public static void test(){
+    public void test(){
         TTT str1 = new TTT("We love 221");
         TTT str2 = new TTT("We are warriors");
         TTT str3 = new TTT("we will pass 281!");
@@ -49,18 +48,18 @@ public class Tests {
         Assertions.assertEquals(false, buffer2.put(null));
     }
     @Test
-    public static void test1_1(){
+    public void test1_1(){
         TTT str1 = new TTT("We love 221");
         TTT str2 = new TTT("We are warriors");
         TTT str3 = new TTT("we will pass 281!");
         TTT str4 = new TTT("built a snowman last night, a tiny one");
         Assertions.assertEquals(true, buffer1.put(str1));
-        Assertions.assertEquals(true, buffer1.put(str2));
+        Assertions.assertTrue(buffer1.put(str2));
         Assertions.assertEquals(true, buffer1.put(str3));
         Assertions.assertEquals(false, buffer1.put(null));
     }
     @Test
-    public static void test1_2(){
+    public void test1_2(){
         TTT str1 = new TTT("We love 221");
         TTT str2 = new TTT("We are warriors");
         TTT str3 = new TTT("we will pass 281!");
@@ -330,7 +329,7 @@ public class Tests {
     }
 
     // TTT is a data type
-    public static class TTT implements Bufferable{
+    public static class TTT implements Bufferable {
         String str1;
         public TTT(String xxx){
             str1 = xxx;
