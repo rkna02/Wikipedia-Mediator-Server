@@ -262,18 +262,19 @@ public class WikiMediator {
 
     private int windowedPeakLoad(int timeWindowInSeconds){
         // method 5 and 6
-        count++;
+       count++;
         countReq.put(count,System.currentTimeMillis()); // store it's current time
         //----------------------------------------------------------------------------
         // sort the countReq
         Set<Integer> keyset = new HashSet<>();
         keyset = countReq.keySet();
-        List<Integer> targetList = List.copyOf(keyset);
+        List<Integer> targetList = new ArrayList<>(keyset);
+
 
         for(int i=0; i < keyset.size(); i++){
             for(int j = i+1; j< keyset.size();j++){
                 if(countReq.get(targetList.get(i))<countReq.get(targetList.get(j))){
-                    int temp = targetList.get(j);
+                    int temp = targetList.get(i);
                     targetList.add(i,targetList.get(j));
                     targetList.remove(i+1);
                     targetList.add(j,temp);
@@ -285,7 +286,7 @@ public class WikiMediator {
         int [] numarr = new int[targetList.size()];
 
         for(int i=0; i<targetList.size();i++){
-            int num =0;
+            int num =1;
             long time = countReq.get(targetList.get(i)) - timeWindowInSeconds*1000L;
             for(int j=i+1; j<targetList.size(); j++){
                 if(countReq.get(targetList.get(j)) > time){
@@ -297,7 +298,7 @@ public class WikiMediator {
 
         Arrays.sort(numarr);
 
-        return numarr[0];
+        return numarr[targetList.size()-1];
     }
 
     int windowedPeakLoad(){
@@ -307,7 +308,7 @@ public class WikiMediator {
         //----------------------------------------------------------------------------
 
         // sort the countReq
-        Set<Integer> keyset = new HashSet<>();
+         Set<Integer> keyset = new HashSet<>();
         keyset = countReq.keySet();
         List<Integer> targetList = List.copyOf(keyset);
 
@@ -315,7 +316,7 @@ public class WikiMediator {
             for(int j = i+1; j< keyset.size();j++){
                 if(countReq.get(targetList.get(i))<countReq.get(targetList.get(j))){
                     int temp = targetList.get(j);
-                    targetList.add(i,targetList.get(j));
+                    targetList.add(i,targetList.get(i));
                     targetList.remove(i+1);
                     targetList.add(j,temp);
                     targetList.remove(j+1);
@@ -323,22 +324,21 @@ public class WikiMediator {
             }
         }
 
-        int [] numarr = new int[targetList.size()];
+        int [] numarr2 = new int[targetList.size()];
 
         for(int i=0; i<targetList.size();i++){
-            int num =0;
-            long time = countReq.get(targetList.get(i)) - 30*1000;
+            int num =1;
+            long time = countReq.get(targetList.get(i)) - 30L*1000L;
             for(int j=i+1; j<targetList.size(); j++){
                 if(countReq.get(targetList.get(j)) > time){
                     num++;
                 }
             }
-            numarr[i] = num;
+            numarr2[i] = num;
         }
 
-        Arrays.sort(numarr);
-
-        return numarr[0];
+        Arrays.sort(numarr2);
+        return numarr2[targetList.size()-1];
 
     }
 
