@@ -209,52 +209,50 @@ public class WikiMediator {
         long start = System.currentTimeMillis()-timeLimitInSeconds*1000L;
         long end = (System.currentTimeMillis());
 
-        Set<Long> xx = new HashSet<>();
-        List<String> yy = new ArrayList<>();
-        xx = requestmap.keySet();
+        Set<Long> tempset = new HashSet<>();
+        List<String> templist = new ArrayList<>();
+        tempset = requestmap.keySet();
         synchronized (this){
-            for(Long x: xx){
+            for(Long x: tempset){
                 if( x >= start && x <end ){
-                    yy.add(requestmap.get(x));
+                    templist.add(requestmap.get(x));
                 }
             }
         }
-
-        Map<String, Integer> rr = new HashMap<>();
+        Map<String, Integer> tempmap = new HashMap<>();
         // creating a map now that maps string to frequency
-        for(int i=0; i<yy.size();i++){
+        for(int i=0; i<templist.size();i++){
             int track= 1;
-            for(int j=i+1; j<yy.size();j++){
-                if(yy.get(i).equals(yy.get(j))){
+            for(int j=i+1; j<templist.size();j++){
+                if(templist.get(i).equals(templist.get(j))){
                     track++;
                 }
             }
-            rr.put(yy.get(i),track);
+            tempmap.put(templist.get(i),track);
         }
-
         // changing yy so that yy has a descending order
-        for(int i=0; i<rr.size(); i++){
-            for(int j= i+1; j< rr.size(); j++){
-                if(rr.get(yy.get(i)) < rr.get(yy.get(j))){
-                    String temp = yy.get(i);
-                    yy.add(i, yy.get(j));
-                    yy.remove(i+1);
-                    yy.add(j, temp);
-                    yy.remove(j+1);
+        for(int i=0; i<tempmap.size(); i++){
+            for(int j= i+1; j< tempmap.size(); j++){
+                if(tempmap.get(templist.get(i)) < tempmap.get(templist.get(j))){
+                    String temp = templist.get(i);
+                    templist.add(i, templist.get(j));
+                    templist.remove(i+1);
+                    templist.add(j, temp);
+                    templist.remove(j+1);
                 }
             }
         }
-
+        //returning
         List<String> ultimatereturnlist = new ArrayList<>();  // local arraylist
-        if (maxItems > yy.size()){
-            for (int j =0 ; j< yy.size(); j++){
-                ultimatereturnlist.add(yy.get(j));
+        if (maxItems > templist.size()){
+            for (int j =0 ; j< templist.size(); j++){
+                ultimatereturnlist.add(templist.get(j));
             }
             return ultimatereturnlist;
         }
         else{
             for (int j =0 ; j < maxItems; j++){
-                ultimatereturnlist.add(yy.get(j));
+                ultimatereturnlist.add(templist.get(j));
             }
             return ultimatereturnlist;
         }
