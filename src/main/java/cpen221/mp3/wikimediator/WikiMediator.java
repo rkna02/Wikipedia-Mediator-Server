@@ -23,9 +23,9 @@ public class WikiMediator {
     private final int timeout;
 
     /** Synchronized map that stores pages and their time stamps */
-    private final Map <String ,Long> map = Collections.synchronizedMap(new HashMap<>());
+    private final Map <String ,Long> pageAccess = Collections.synchronizedMap(new HashMap<>());
 
-    /** Synchronized list of wiki pages that contains text */
+    /** Synchronized list of wiki pages that stores the page texts */
     private final List <String> pageList = Collections.synchronizedList(new ArrayList<>());
 
     /** Synchronized list of requests sent in getpage and search */
@@ -37,42 +37,82 @@ public class WikiMediator {
     /** Synchronized map that stores the program counter and the time that it updates
      * The program counter updates when executing a new instruction */
     private final AtomicInteger programCounter = new AtomicInteger(0);
-    private final Map<AtomicInteger, Long> countReq = Collections.synchronizedMap(new HashMap<>());
+    private final Map<AtomicInteger, Long> pcHistory = Collections.synchronizedMap(new HashMap<>());
 
     //  Representation Invariant
-    //  map elements != null
+    //  pageAccess elements != null
     //  pageList elements != null
     //  requestList elements != null
     //  requestmap elements != null
-    //  stringFrequency elements != null
-    //  countReq elements != null
-    //
-    //
-    //
-
+    //  pcHistory elements != null
+    
     //  Abstract Function
+    //  Service's maximum number of stored objects and expiry time is
+    //  represented by capacity and timeout respectively
+    //  capacity = N represents that the service can hold a maximum of N objects
+    //  timeout = M represents that the service will expire after M seconds
+    //  Example:
+    //  capacity = 5 means the service can hold a maximum of 5 objects
+    //  timeout = 3600 means the service will expire after 3600 seconds (1 hour)
+    //
+    //  Service's program counter is represented by Atomic Integer programCounter
+    //  programCounter keeps track of the number of programs excuted,
+    //  programCounter starts from 0 and increases by 1 each time an instruction is called
+    //
+    //  Service's wikipage texts and requests are represented by pageList and requestList respectively
+    //  
+    
 
 
     //  Thread-safe Arguments
-    //
-
+    //  capacity and timeout are final, so those variables are immutable and thread-safe
+    //  pageAccess, pageList, requestList, requestmap, programCounter, pcHistory
+    //  are final, so those variables are immutable and thread-safe
+    //  pageAccess, pageList, requestList, requestmap, programCounter, pcHistory
+    //  are synchronized datatypes
+    //  pageAccess, pageList, requestList, requestmap, programCounter, pcHistory
+    //  points to thread safe datatypes
+    
+    
+    synchronized private void checkRep() {
+        for (int i = 0; i < pageAccess.size(); i++) {
+            if (pageAccess.get(i) == null) {
+                throw new RuntimeException("ERROR: instantiated list is null");
+            }
+        }
+        for (int i = 0; i < pageList.size(); i++) {
+            if (pageList.get(i) == null) {
+                throw new RuntimeException("ERROR: instantiated list is null");
+            }
+        }
+        for (int i = 0; i < requestList.size(); i++) {
+            if (requestList.get(i) == null) {
+                throw new RuntimeException("ERROR: instantiated list is null");
+            }
+        }
+        for (int i = 0; i < requestmap.size(); i++) {
+            if (requestmap.get(i) == null) {
+                throw new RuntimeException("ERROR: instantiated list is null");
+            }
+        }
+        for (int i = 0; i < pcHistory.size(); i++) {
+            if (pcHistory.get(i) == null) {
+                throw new RuntimeException("ERROR: instantiated list is null");
+            }
+        }
+    }
 
     public WikiMediator(int capacity, int stalenessInterval) {
         this.capacity= capacity;
         this.timeout = stalenessInterval;
     }
-     /**
-     *
-     * @param query content that clients can search on wikipedia
-     * @param limit the numbers of title that the list should return
-     * @return a list that contains limit numbers the response from the searching keyword
-     */
-    public List<String> search(String query, int limit){
+
+    private List<String> search(String query, int limit){
         Wiki wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         // method 5 and 6
         long tim = System.currentTimeMillis();
         programCounter.getAndAdd(1);
-        countReq.put(programCounter,tim); // store it's current time
+        pcHistory.put(programCounter,tim); // store it's current time
         //--------------------------------------
         List<String> searchlist = new ArrayList<>();
         searchlist = wiki.search(query,limit);
@@ -83,47 +123,43 @@ public class WikiMediator {
 
         return searchlist;
     }
-     /**
-     *
-     * @param pageTitle the title of the page on wikipedia
-     * @return return all the text on that page
-     */
-    public String getPage(String pageTitle){
+
+    private String getPage(String pageTitle){
         Wiki wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         // Gets the text of the main page and prints it.
 
         //method 5 and 6
         long tim = System.currentTimeMillis();
         programCounter.getAndAdd(1);
-        countReq.put(programCounter, tim); // store it's current time
+        pcHistory.put(programCounter, tim); // store it's current time
         //
         StringBuilder textInThePage = new StringBuilder();
         textInThePage.append(wiki.getPageText(pageTitle));
 
         synchronized (this){
-            for(int i = 0; i< map.size(); i++){
-                if(map.get(pageList.get(i)) < System.currentTimeMillis()){
-                    map.remove(pageList.get(i));
+            for(int i = 0; i< pageAccess.size(); i++){
+                if(pageAccess.get(pageList.get(i)) < System.currentTimeMillis()){
+                    pageAccess.remove(pageList.get(i));
                 }
             }
         }
 
         if(pageList.size() < capacity){
             pageList.add(textInThePage.toString());
-            map.put(textInThePage.toString(), System.currentTimeMillis()+timeout*1000L);
+            pageAccess.put(textInThePage.toString(), System.currentTimeMillis()+timeout*1000L);
         }
         else if(pageList.size() == capacity){
             String idd = pageList.get(0);
             synchronized (this){
                 for(int i = 1 ;i <pageList.size(); i++){
-                    if(map.get(pageList.get(i)) < map.get(idd)){
+                    if(pageAccess.get(pageList.get(i)) < pageAccess.get(idd)){
                         idd = pageList.get(i);
                     }
                 }
             }
             pageList.remove(idd);
             pageList.add(textInThePage.toString());
-            map.put(textInThePage.toString(), System.currentTimeMillis()+timeout*1000L);
+            pageAccess.put(textInThePage.toString(), System.currentTimeMillis()+timeout*1000L);
         }
         // for method 3
         requestList.add(pageTitle);
@@ -131,15 +167,11 @@ public class WikiMediator {
 
         return textInThePage.toString();
     }
-     /**
-     *
-     * @param limit the numbers of queries that this method should return
-     * @return a list containing limit number of requests that ranked in non-ascending order in terms of frequency
-     */
-    public List<String> zeitgeist(int limit){
+
+    private List<String> zeitgeist(int limit){
         // method 5 and 6
         programCounter.getAndAdd(1);
-        countReq.put(programCounter,System.currentTimeMillis()); // store it's current time
+        pcHistory.put(programCounter,System.currentTimeMillis()); // store it's current time
         //------------------------------
         StringBuilder commonStr = new StringBuilder();
         Map<String,Integer>stringFrequency = new HashMap<>();
@@ -210,16 +242,11 @@ public class WikiMediator {
         }
     }
 
-     /**
-     *
-     * @param timeLimitInSeconds time intervals in seconds
-     * @param maxItems the number of elements that list can return
-     * @return return a list of most frequent request in the time interval
-     */
-    public List<String> trending(int timeLimitInSeconds, int maxItems){
+
+    private List<String> trending(int timeLimitInSeconds, int maxItems){
         // method 5 and 6
         programCounter.getAndAdd(1);
-        countReq.put(programCounter,System.currentTimeMillis()); // store it's current time
+        pcHistory.put(programCounter,System.currentTimeMillis()); // store it's current time
 //-----------------------------------------------------------------------------------------------------------------
         long start = System.currentTimeMillis()-timeLimitInSeconds*1000L;
         long end = (System.currentTimeMillis());
@@ -272,26 +299,21 @@ public class WikiMediator {
             return ultimatereturnlist;
         }
     }
-    
-     /**
-     *
-     * @param timeWindowInSeconds a interval of time in seconds
-     * @return  the max number of request done in time intervals of timeWindowInSeconds seconds
-     */
-    public int windowedPeakLoad(int timeWindowInSeconds){
+
+    private int windowedPeakLoad(int timeWindowInSeconds){
         // method 5 and 6
         programCounter.getAndAdd(1);
-        countReq.put(programCounter,System.currentTimeMillis()); // store it's current time
+        pcHistory.put(programCounter,System.currentTimeMillis()); // store it's current time
         //----------------------------------------------------------------------------
         // sort the countReq
         Set<AtomicInteger> keyset = new HashSet<>();
-        keyset = countReq.keySet();
+        keyset = pcHistory.keySet();
         List<AtomicInteger> targetList = new ArrayList<>(keyset);
 
 
         for(int i=0; i < keyset.size(); i++){
             for(int j = i+1; j< keyset.size();j++){
-                if(countReq.get(targetList.get(i))<countReq.get(targetList.get(j))){
+                if(pcHistory.get(targetList.get(i))<pcHistory.get(targetList.get(j))){
                     AtomicInteger temp = targetList.get(i);
                     targetList.add(i,targetList.get(j));
                     targetList.remove(i+1);
@@ -305,9 +327,9 @@ public class WikiMediator {
 
         for(int i=0; i<targetList.size();i++){
             int num =1;
-            long time = countReq.get(targetList.get(i)) - timeWindowInSeconds*1000L;
+            long time = pcHistory.get(targetList.get(i)) - timeWindowInSeconds*1000L;
             for(int j=i+1; j<targetList.size(); j++){
-                if(countReq.get(targetList.get(j)) > time){
+                if(pcHistory.get(targetList.get(j)) > time){
                     num++;
                 }
             }
@@ -318,20 +340,17 @@ public class WikiMediator {
 
         return numarr[targetList.size()-1];
     }
-    /**
-     *
-     * @return the max number of request done in time intervals of 30 seconds
-     */
+
     public int windowedPeakLoad(){
 
         // sort the countReq
         Set<AtomicInteger> keyset = new HashSet<>();
-        keyset = countReq.keySet();
+        keyset = pcHistory.keySet();
         List<AtomicInteger> targetList = List.copyOf(keyset);
 
         for(int i=0; i < keyset.size(); i++){
             for(int j = i+1; j< keyset.size();j++){
-                if(countReq.get(targetList.get(i))<countReq.get(targetList.get(j))){
+                if(pcHistory.get(targetList.get(i))<pcHistory.get(targetList.get(j))){
                     AtomicInteger temp = targetList.get(j);
                     targetList.add(i,targetList.get(i));
                     targetList.remove(i+1);
@@ -345,9 +364,9 @@ public class WikiMediator {
 
         for(int i=0; i<targetList.size();i++){
             int num =1;
-            long time = countReq.get(targetList.get(i)) - 30L*1000L;
+            long time = pcHistory.get(targetList.get(i)) - 30L*1000L;
             for(int j=i+1; j<targetList.size(); j++){
-                if(countReq.get(targetList.get(j)) > time){
+                if(pcHistory.get(targetList.get(j)) > time){
                     num++;
                 }
             }
@@ -358,7 +377,6 @@ public class WikiMediator {
         return numarr2[targetList.size()-1];
 
     }
-
 
 }
 
