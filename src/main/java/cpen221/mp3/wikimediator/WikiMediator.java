@@ -128,7 +128,7 @@ public class WikiMediator {
      * @param limit the numbers of title that the list should return
      * @return a list that contains limit numbers the response from the searching keyword
      */
-    private List<String> search(String query, int limit){
+    public List<String> search(String query, int limit){
         Wiki wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         // method 5 and 6
         long tim = System.currentTimeMillis();
@@ -150,7 +150,7 @@ public class WikiMediator {
      * @param pageTitle the title of the page on wikipedia
      * @return return all the text on that page
      */
-    private String getPage(String pageTitle){
+    public String getPage(String pageTitle){
         Wiki wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         // Gets the text of the main page and prints it.
 
@@ -198,7 +198,7 @@ public class WikiMediator {
      * @param limit the numbers of queries that this method should return
      * @return a list containing limit number of requests that ranked in non-ascending order in terms of frequency
      */
-    private List<String> zeitgeist(int limit){
+    public List<String> zeitgeist(int limit){
         // method 5 and 6
         programCounter.getAndAdd(1);
         pcHistory.put(programCounter,System.currentTimeMillis()); // store it's current time
@@ -279,7 +279,7 @@ public class WikiMediator {
      * @param maxItems the number of elements that list can return
      * @return return a list of most frequent request in the time interval
      */
-    private List<String> trending(int timeLimitInSeconds, int maxItems){
+    public List<String> trending(int timeLimitInSeconds, int maxItems){
         // method 5 and 6
         programCounter.getAndAdd(1);
         pcHistory.put(programCounter,System.currentTimeMillis()); // store it's current time
@@ -341,7 +341,7 @@ public class WikiMediator {
      * @param timeWindowInSeconds a interval of time in seconds
      * @return  the max number of request done in time intervals of timeWindowInSeconds seconds
      */
-    private int windowedPeakLoad(int timeWindowInSeconds){
+    public int windowedPeakLoad(int timeWindowInSeconds){
         // method 5 and 6
         programCounter.getAndAdd(1);
         pcHistory.put(programCounter,System.currentTimeMillis()); // store it's current time
