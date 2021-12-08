@@ -1,17 +1,395 @@
 package cpen221.mp3.wikimediator;
 
+import org.fastily.jwiki.core.Wiki;
+
+import java.io.*;
+import java.lang.Thread;
+
+//
+import org.fastily.jwiki.dwrap.Revision;
+import org.fastily.jwiki.core.Wiki;
+
+import java.util.List;
+import java.util.*;
+
+/** WikiMediator is a mediator service for Wikipedia.
+  * This service will access Wikipedia to obtain pages and other relevant information. */
 public class WikiMediator {
 
-    /* TODO: Implement this datatype
+    /** Concrete Representation */
+    /** Two integers to specify the capacity and timeout of the buffer */
+    private final int capacity;
+    private final int timeout;
 
-        You must implement the methods with the exact signatures
-        as provided in the statement for this mini-project.
+    /** Synchronized map that stores pages and their time stamps */
+    private final Map <String ,Long> map = Collections.synchronizedMap(new HashMap<>());
 
-        You must add method signatures even for the methods that you
-        do not plan to implement. You should provide skeleton implementation
-        for those methods, and the skeleton implementation could return
-        values like null.
+    /** Synchronized list of wiki pages that contains text */
+    private final List <String> pageList = Collections.synchronizedList(new ArrayList<>());
 
-     */
+    /** Synchronized list of requests sent in getpage and search */
+    private final List <String> requestList = Collections.synchronizedList(new ArrayList<>());
 
+    /** */
+    private final Map <Long, String> requestmap = Collections.synchronizedMap(new HashMap<>());
+
+    /**  */
+    private int count;
+
+    /** */
+    private final Map<Integer, Long> countReq = Collections.synchronizedMap(new HashMap<>());
+
+    //  Representation Invariant
+    //  map elements != null
+    //  pageList elements != null
+    //  requestList elements != null
+    //  requestmap elements != null
+    //  stringFrequency elements != null
+    //  countReq elements != null
+    //
+    //
+    //
+
+    //  Abstract Function
+
+
+    //  Thread-safe Arguments
+    //
+
+
+    public WikiMediator(int capacity, int stalenessInterval) {
+        this.capacity= capacity;
+        this.timeout = stalenessInterval;
+
+        // for method 5 and 6
+        this.count = 0;
+    }
+
+    private List<String> search(String query, int limit){
+        Wiki wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
+        // method 5 and 6
+        long tim = System.currentTimeMillis();
+        count++;
+        countReq.put(count,tim); // store it's current time
+        //--------------------------------------
+        List<String> searchlist = new ArrayList<>();
+        searchlist = wiki.search(query,limit);
+
+        // for method 3
+        requestList.add(query);
+        requestmap.put(tim,query);
+
+        return searchlist;
+    }
+
+    private String getPage(String pageTitle){
+        Wiki wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
+        // Gets the text of the main page and prints it.
+
+        //method 5 and 6
+        long tim = System.currentTimeMillis();
+        count++;
+        countReq.put(count, tim); // store it's current time
+        //
+        StringBuilder textInThePage = new StringBuilder();
+        textInThePage.append(wiki.getPageText(pageTitle));
+
+        synchronized (this){
+            for(int i = 0; i< map.size(); i++){
+                if(map.get(pageList.get(i)) < System.currentTimeMillis()){
+                    map.remove(pageList.get(i));
+                }
+            }
+        }
+
+        if(pageList.size() < capacity){
+            pageList.add(textInThePage.toString());
+            map.put(textInThePage.toString(), System.currentTimeMillis()+timeout*1000);
+        }
+        else if(pageList.size() == capacity){
+            String idd = pageList.get(0);
+            synchronized (this){
+                for(int i = 1 ;i <pageList.size(); i++){
+                    if(map.get(pageList.get(i)) < map.get(idd)){
+                        idd = pageList.get(i);
+                    }
+                }
+            }
+            pageList.remove(idd);
+            pageList.add(textInThePage.toString());
+            map.put(textInThePage.toString(), System.currentTimeMillis()+timeout*1000);
+        }
+        // for method 3
+        requestList.add(pageTitle);
+        requestmap.put(tim, pageTitle);
+
+        return textInThePage.toString();
+    }
+
+    private List<String> zeitgeist(int limit){
+        // method 5 and 6
+        count++;
+        countReq.put(count,System.currentTimeMillis()); // store it's current time
+        //------------------------------
+        StringBuilder commonStr = new StringBuilder();
+        stringFrequency = new HashMap<>();
+        List<String> copy = new ArrayList<>();
+        Set<String> copy2 = new HashSet<>();
+        List<String> zeitlist = new ArrayList<>();
+        // local string builder has all the request strings
+        synchronized (this){
+            for(String c : requestList){
+                //copy.add(c);
+                commonStr.append(c);
+                commonStr.append(" ");
+            }
+        }
+        // split the string
+        String[] splited = commonStr.toString().split("\\s+");
+        // make copy obtains all the strings
+        for(int i=0; i < splited.length;i++){
+            copy.add(splited[i]);
+        }
+
+        // a hashmap of string maps to frequency
+        for(int i=0; i < copy.size(); i++){
+            int k = 1;
+            for(int j=i+1; j<copy.size();j++){
+                if(i!=j && copy.get(i).equals(copy.get(j))){
+                    k++;
+                }
+            }
+            if(!stringFrequency.containsKey(copy.get(i))){
+                stringFrequency.put(copy.get(i),k);
+            }
+        }
+        // make sure copy does not have duplicates
+        copy2 = stringFrequency.keySet();
+        copy.clear();
+        for(String c :copy2){
+            copy.add(c);
+        }
+
+        // sorting in descending: most common to least common strings
+        synchronized (this){
+            for (int i = 0 ; i < stringFrequency.size(); i ++){
+                for (int j = i+1 ; j < stringFrequency.size(); j ++){
+                    if(stringFrequency.get(copy.get(i)) < stringFrequency.get(copy.get(j))){
+                        String temp = copy.get(i);
+                        copy.add(i, copy.get(j));
+                        copy.remove(i+1);
+                        copy.add(j, temp);
+                        copy.remove(j+1);
+                    }
+                }
+            }
+        }
+
+        // return a list that is in descending order of the frequency of strings that appear in the query getPage and search
+        if(copy.size() < limit) {
+            for(int i=0; i<copy.size(); i++){
+                zeitlist.add(copy.get(i));
+            }
+            return zeitlist;
+        }
+        else{
+            for(int i=0; i < limit; i++){
+                zeitlist.add(copy.get(i));
+            }
+            return zeitlist;
+        }
+    }
+
+
+    private List<String> trending(int timeLimitInSeconds, int maxItems){
+        // method 5 and 6
+        count++;
+        countReq.put(count,System.currentTimeMillis()); // store it's current time
+//-----------------------------------------------------------------------------------------------------------------
+        long start = System.currentTimeMillis()-timeLimitInSeconds*1000L;
+        long end = (System.currentTimeMillis());
+
+        Set<Long> xx = new HashSet<>();
+        List<String> yy = new ArrayList<>();
+        xx = requestmap.keySet();
+        synchronized (this){
+            for(Long x: xx){
+                if( x >= start && x <end ){
+                    yy.add(requestmap.get(x));
+                }
+            }
+        }
+
+        Map<String, Integer> rr = new HashMap<>();
+        // creating a map now that maps string to frequency
+        for(int i=0; i<yy.size();i++){
+            int track= 1;
+            for(int j=i+1; j<yy.size();j++){
+                if(yy.get(i).equals(yy.get(j))){
+                    track++;
+                }
+            }
+            rr.put(yy.get(i),track);
+        }
+
+        // changing yy so that yy has a descending order
+        for(int i=0; i<rr.size(); i++){
+            for(int j= i+1; j< rr.size(); j++){
+                if(rr.get(yy.get(i)) < rr.get(yy.get(j))){
+                    String temp = yy.get(i);
+                    yy.add(i, yy.get(j));
+                    yy.remove(i+1);
+                    yy.add(j, temp);
+                    yy.remove(j+1);
+                }
+            }
+        }
+
+        List<String> ultimatereturnlist = new ArrayList<>();  // local arraylist
+        if (maxItems > yy.size()){
+            for (int j =0 ; j< yy.size(); j++){
+                ultimatereturnlist.add(yy.get(j));
+            }
+            return ultimatereturnlist;
+        }
+        else{
+            for (int j =0 ; j < maxItems; j++){
+                ultimatereturnlist.add(yy.get(j));
+            }
+            return ultimatereturnlist;
+        }
+    }
+
+    int windowedPeakLoad(int timeWindowInSeconds){
+        // method 5 and 6
+        count++;
+        countReq.put(count,System.currentTimeMillis()); // store it's current time
+        //----------------------------------------------------------------------------
+        // sort the countReq
+        Set<Integer> keyset = new HashSet<>();
+        keyset = countReq.keySet();
+        List<Integer> targetList = List.copyOf(keyset);
+
+        for(int i=0; i < keyset.size(); i++){
+            for(int j = i+1; j< keyset.size();j++){
+                if(countReq.get(targetList.get(i))<countReq.get(targetList.get(j))){
+                    int temp = targetList.get(j);
+                    targetList.add(i,targetList.get(j));
+                    targetList.remove(i+1);
+                    targetList.add(j,temp);
+                    targetList.remove(j+1);
+                }
+            }
+        }
+
+        int [] numarr = new int[targetList.size()];
+
+        for(int i=0; i<targetList.size();i++){
+            int num =0;
+            long time = countReq.get(targetList.get(i)) - timeWindowInSeconds*1000L;
+            for(int j=i+1; j<targetList.size(); j++){
+                if(countReq.get(targetList.get(j)) > time){
+                    num++;
+                }
+            }
+            numarr[i] = num;
+        }
+
+        Arrays.sort(numarr);
+
+        return numarr[0];
+    }
+
+    int windowedPeakLoad(){
+        // method 5 and 6
+//        count++;
+//        countReq.put(count,System.currentTimeMillis()); // store it's current time
+        //----------------------------------------------------------------------------
+
+        // sort the countReq
+        Set<Integer> keyset = new HashSet<>();
+        keyset = countReq.keySet();
+        List<Integer> targetList = List.copyOf(keyset);
+
+        for(int i=0; i < keyset.size(); i++){
+            for(int j = i+1; j< keyset.size();j++){
+                if(countReq.get(targetList.get(i))<countReq.get(targetList.get(j))){
+                    int temp = targetList.get(j);
+                    targetList.add(i,targetList.get(j));
+                    targetList.remove(i+1);
+                    targetList.add(j,temp);
+                    targetList.remove(j+1);
+                }
+            }
+        }
+
+        int [] numarr = new int[targetList.size()];
+
+        for(int i=0; i<targetList.size();i++){
+            int num =0;
+            long time = countReq.get(targetList.get(i)) - 30*1000;
+            for(int j=i+1; j<targetList.size(); j++){
+                if(countReq.get(targetList.get(j)) > time){
+                    num++;
+                }
+            }
+            numarr[i] = num;
+        }
+
+        Arrays.sort(numarr);
+
+        return numarr[0];
+
+    }
+
+    public static void main(String[] args){
+
+        WikiMediator wk = new WikiMediator(5, 2);
+        List<String> l1 = new ArrayList<>();
+        List<String> l2 = new ArrayList<>();
+        l1 = wk.search("NCAA", 5);
+        l2 = wk.search("China", 10);
+        System.out.println(l1);
+        System.out.println(l2);
+
+        String s1 = new String();
+        String s2 = new String();
+        s1 = wk.getPage("NBA");
+
+        s2 = wk.getPage("China");
+        System.out.println(s1);
+        System.out.println(s2);
+
+        List<String> ll1 = new ArrayList<>(); List<String> ll2 = new ArrayList<>();
+        ll1 = wk.zeitgeist(10);
+        ll2 = wk.zeitgeist(5);
+        System.out.println("Task3");
+        System.out.println(ll1);
+        System.out.println(ll2);
+        System.out.println("Task4");
+        List<String> www = new ArrayList<>();
+        www = wk.trending(1,4);
+        for(int i=0;i<www.size();i++){
+            System.out.println(www.get(i));
+        }
+        //lt2 = wk.trending(1,2);
+
+
+//        WikiMediator wtt = new WikiMediator(3, 10);
+//        List<String> wl1 = new ArrayList<>();
+//        List<String> wl2 = new ArrayList<>();
+//        List<String> wl3 = new ArrayList<>();
+//        List<String> wl4 = new ArrayList<>();
+//        wl1 = wtt.search("Napolean", 5);
+//        wl2 = wtt.search("Napolean", 5);
+//        wl3 = wtt.search("Napolean", 5);
+//        wl4 = wtt.search("Napolean", 5);
+//        List<String> tt = new ArrayList<>();
+//        tt= wtt.zeitgeist(10);
+//        System.out.println(tt);
+
+
+
+        System.exit(0);
+    }
 }
