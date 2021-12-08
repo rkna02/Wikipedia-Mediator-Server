@@ -333,7 +333,6 @@ public class WikiMediator {
         }
 
         Arrays.sort(numarr);
-
         return numarr[0];
 
     }
