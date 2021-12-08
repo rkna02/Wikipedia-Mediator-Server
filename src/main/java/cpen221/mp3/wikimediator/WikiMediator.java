@@ -132,7 +132,7 @@ public class WikiMediator {
         countReq.put(count,System.currentTimeMillis()); // store it's current time
         //------------------------------
         StringBuilder commonStr = new StringBuilder();
-        stringFrequency = new HashMap<>();
+        Map<String,Integer>stringFrequency = new HashMap<>();
         List<String> copy = new ArrayList<>();
         Set<String> copy2 = new HashSet<>();
         List<String> zeitlist = new ArrayList<>();
@@ -260,7 +260,7 @@ public class WikiMediator {
         }
     }
 
-    int windowedPeakLoad(int timeWindowInSeconds){
+    private int windowedPeakLoad(int timeWindowInSeconds){
         // method 5 and 6
         count++;
         countReq.put(count,System.currentTimeMillis()); // store it's current time
