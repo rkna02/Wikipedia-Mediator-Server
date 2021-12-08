@@ -11,9 +11,10 @@ import org.fastily.jwiki.core.Wiki;
 
 import java.util.List;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** WikiMediator is a mediator service for Wikipedia.
-  * This service will access Wikipedia to obtain pages and other relevant information. */
+ * This service will access Wikipedia to obtain pages and other relevant information. */
 public class WikiMediator {
 
     /** Concrete Representation */
@@ -30,14 +31,13 @@ public class WikiMediator {
     /** Synchronized list of requests sent in getpage and search */
     private final List <String> requestList = Collections.synchronizedList(new ArrayList<>());
 
-    /** */
+    /** Synchronized map that stores a request and the time of request */
     private final Map <Long, String> requestmap = Collections.synchronizedMap(new HashMap<>());
 
-    /**  */
-    private int count;
-
-    /** */
-    private final Map<Integer, Long> countReq = Collections.synchronizedMap(new HashMap<>());
+    /** Synchronized map that stores the program counter and the time that it updates
+     * The program counter updates when executing a new instruction */
+    private final AtomicInteger programCounter = new AtomicInteger(0);
+    private final Map<AtomicInteger, Long> countReq = Collections.synchronizedMap(new HashMap<>());
 
     //  Representation Invariant
     //  map elements != null
@@ -60,17 +60,14 @@ public class WikiMediator {
     public WikiMediator(int capacity, int stalenessInterval) {
         this.capacity= capacity;
         this.timeout = stalenessInterval;
-
-        // for method 5 and 6
-        this.count = 0;
     }
 
     private List<String> search(String query, int limit){
         Wiki wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         // method 5 and 6
         long tim = System.currentTimeMillis();
-        count++;
-        countReq.put(count,tim); // store it's current time
+        programCounter.getAndAdd(1);
+        countReq.put(programCounter,tim); // store it's current time
         //--------------------------------------
         List<String> searchlist = new ArrayList<>();
         searchlist = wiki.search(query,limit);
@@ -88,8 +85,8 @@ public class WikiMediator {
 
         //method 5 and 6
         long tim = System.currentTimeMillis();
-        count++;
-        countReq.put(count, tim); // store it's current time
+        programCounter.getAndAdd(1);
+        countReq.put(programCounter, tim); // store it's current time
         //
         StringBuilder textInThePage = new StringBuilder();
         textInThePage.append(wiki.getPageText(pageTitle));
@@ -104,7 +101,7 @@ public class WikiMediator {
 
         if(pageList.size() < capacity){
             pageList.add(textInThePage.toString());
-            map.put(textInThePage.toString(), System.currentTimeMillis()+timeout*1000);
+            map.put(textInThePage.toString(), System.currentTimeMillis()+timeout*1000L);
         }
         else if(pageList.size() == capacity){
             String idd = pageList.get(0);
@@ -117,7 +114,7 @@ public class WikiMediator {
             }
             pageList.remove(idd);
             pageList.add(textInThePage.toString());
-            map.put(textInThePage.toString(), System.currentTimeMillis()+timeout*1000);
+            map.put(textInThePage.toString(), System.currentTimeMillis()+timeout*1000L);
         }
         // for method 3
         requestList.add(pageTitle);
@@ -128,8 +125,8 @@ public class WikiMediator {
 
     private List<String> zeitgeist(int limit){
         // method 5 and 6
-        count++;
-        countReq.put(count,System.currentTimeMillis()); // store it's current time
+        programCounter.getAndAdd(1);
+        countReq.put(programCounter,System.currentTimeMillis()); // store it's current time
         //------------------------------
         StringBuilder commonStr = new StringBuilder();
         Map<String,Integer>stringFrequency = new HashMap<>();
@@ -203,8 +200,8 @@ public class WikiMediator {
 
     private List<String> trending(int timeLimitInSeconds, int maxItems){
         // method 5 and 6
-        count++;
-        countReq.put(count,System.currentTimeMillis()); // store it's current time
+        programCounter.getAndAdd(1);
+        countReq.put(programCounter,System.currentTimeMillis()); // store it's current time
 //-----------------------------------------------------------------------------------------------------------------
         long start = System.currentTimeMillis()-timeLimitInSeconds*1000L;
         long end = (System.currentTimeMillis());
@@ -214,7 +211,7 @@ public class WikiMediator {
         tempset = requestmap.keySet();
         synchronized (this){
             for(Long x: tempset){
-                if( x >= start && x <end ){
+                if( x >= start && x < end ){
                     templist.add(requestmap.get(x));
                 }
             }
@@ -230,7 +227,7 @@ public class WikiMediator {
             }
             tempmap.put(templist.get(i),track);
         }
-        // changing yy so that yy has a descending order
+
         for(int i=0; i<tempmap.size(); i++){
             for(int j= i+1; j< tempmap.size(); j++){
                 if(tempmap.get(templist.get(i)) < tempmap.get(templist.get(j))){
@@ -260,19 +257,19 @@ public class WikiMediator {
 
     private int windowedPeakLoad(int timeWindowInSeconds){
         // method 5 and 6
-       count++;
-        countReq.put(count,System.currentTimeMillis()); // store it's current time
+        programCounter.getAndAdd(1);
+        countReq.put(programCounter,System.currentTimeMillis()); // store it's current time
         //----------------------------------------------------------------------------
         // sort the countReq
-        Set<Integer> keyset = new HashSet<>();
+        Set<AtomicInteger> keyset = new HashSet<>();
         keyset = countReq.keySet();
-        List<Integer> targetList = new ArrayList<>(keyset);
+        List<AtomicInteger> targetList = new ArrayList<>(keyset);
 
 
         for(int i=0; i < keyset.size(); i++){
             for(int j = i+1; j< keyset.size();j++){
                 if(countReq.get(targetList.get(i))<countReq.get(targetList.get(j))){
-                    int temp = targetList.get(i);
+                    AtomicInteger temp = targetList.get(i);
                     targetList.add(i,targetList.get(j));
                     targetList.remove(i+1);
                     targetList.add(j,temp);
@@ -299,21 +296,17 @@ public class WikiMediator {
         return numarr[targetList.size()-1];
     }
 
-    int windowedPeakLoad(){
-        // method 5 and 6
-//        count++;
-//        countReq.put(count,System.currentTimeMillis()); // store it's current time
-        //----------------------------------------------------------------------------
+    public int windowedPeakLoad(){
 
         // sort the countReq
-         Set<Integer> keyset = new HashSet<>();
+        Set<AtomicInteger> keyset = new HashSet<>();
         keyset = countReq.keySet();
-        List<Integer> targetList = List.copyOf(keyset);
+        List<AtomicInteger> targetList = List.copyOf(keyset);
 
         for(int i=0; i < keyset.size(); i++){
             for(int j = i+1; j< keyset.size();j++){
                 if(countReq.get(targetList.get(i))<countReq.get(targetList.get(j))){
-                    int temp = targetList.get(j);
+                    AtomicInteger temp = targetList.get(j);
                     targetList.add(i,targetList.get(i));
                     targetList.remove(i+1);
                     targetList.add(j,temp);
@@ -391,3 +384,4 @@ public class WikiMediator {
         System.exit(0);
     }
 }
+
