@@ -106,7 +106,12 @@ public class WikiMediator {
         this.capacity= capacity;
         this.timeout = stalenessInterval;
     }
-
+    /**
+     *
+     * @param query content that clients can search on wikipedia
+     * @param limit the numbers of title that the list should return
+     * @return a list that contains limit numbers the response from the searching keyword
+     */
     private List<String> search(String query, int limit){
         Wiki wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         // method 5 and 6
@@ -123,7 +128,11 @@ public class WikiMediator {
 
         return searchlist;
     }
-
+    /**
+     *
+     * @param pageTitle the title of the page on wikipedia
+     * @return return all the text on that page
+     */
     private String getPage(String pageTitle){
         Wiki wiki = new Wiki.Builder().withDomain("en.wikipedia.org").build();
         // Gets the text of the main page and prints it.
@@ -167,7 +176,11 @@ public class WikiMediator {
 
         return textInThePage.toString();
     }
-
+    /**
+     *
+     * @param limit the numbers of queries that this method should return
+     * @return a list containing limit number of requests that ranked in non-ascending order in terms of frequency
+     */
     private List<String> zeitgeist(int limit){
         // method 5 and 6
         programCounter.getAndAdd(1);
@@ -242,7 +255,12 @@ public class WikiMediator {
         }
     }
 
-
+/**
+     *
+     * @param timeLimitInSeconds time intervals in seconds
+     * @param maxItems the number of elements that list can return
+     * @return return a list of most frequent request in the time interval
+     */
     private List<String> trending(int timeLimitInSeconds, int maxItems){
         // method 5 and 6
         programCounter.getAndAdd(1);
@@ -299,7 +317,11 @@ public class WikiMediator {
             return ultimatereturnlist;
         }
     }
-
+     /**
+     *
+     * @param timeWindowInSeconds a interval of time in seconds
+     * @return  the max number of request done in time intervals of timeWindowInSeconds seconds
+     */
     private int windowedPeakLoad(int timeWindowInSeconds){
         // method 5 and 6
         programCounter.getAndAdd(1);
@@ -340,7 +362,10 @@ public class WikiMediator {
 
         return numarr[targetList.size()-1];
     }
-
+    /**
+     *
+     * @return the max number of request done in time intervals of 30 seconds
+     */
     public int windowedPeakLoad(){
 
         // sort the countReq
